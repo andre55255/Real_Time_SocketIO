@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+        <title>Chat</title>
+        <style>
+            .card-message {
+                height: 59vh;
+                padding: 1rem;
+                
+                overflow: scroll;
+            }
+            .toast {
+                background-color: #b81010;
+                color: #eee;
+            }
+            #previousMessages {
+                display: flex;
+                flex-direction: column;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <form class="col s12" id="chat">
+                <div class="row">
+                    <div class="input-field col s12">
+                        <input type="text" name="user" id="user"  autocomplete="off"/>
+                        <label for="user">Usuário</label>
+                    </div>
+                </div>
+
+                <div class="card-horizontal z-depth-2 card-message">
+                    <div class="card-content" id="previousMessages"></div>
+                </div>
+
+                <div class="row">
+                    <div class="input-field col s12">
+                        <input type="text" name="message" id="message" autocomplete="off"/>
+                        <label for="message">Mensagem</label>
+                    </div>
+                </div>
+
+                <button class="btn waves-effect waves-light" type="submit">
+                    Enviar
+                    <i class="material-icons right">send</i>
+                </button>
+            </form>
+        </div>
+    </body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js" integrity="sha512-eVL5Lb9al9FzgR63gDs1MxcDS2wFu3loYAgjIH0+Hg38tCS8Ag62dwKyH+wzDb+QauDpEZjXbMn11blw8cbTJQ==" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+    <script type="text/javascript">
+        const socket = io('http://localhost:8081');
+
+        function renderMessage(message) {
+            const divMessages = document.querySelector('#previousMessages');
+
+            const span = document.createElement('span');
+            const strong = document.createElement('strong');
+            strong.innerHTML = message.user+': ';
+            const msg = document.createTextNode(message.message);
+            span.appendChild(strong);
+            span.appendChild(msg);
+
+            divMessages.appendChild(span);
+        }
+
+        socket.on('receivedMessage', message => {
+            renderMessage(message);
+        });
+
+        socket.on('previousMessages', messages => {
+            for(message of messages) {
+                renderMessage({ user: message.user, message: message.message });
+            }
+        });
+
+        const form = document.querySelector('#chat');
+        form.addEventListener("submit", function(e) {
+            e.preventDefault();
+
+            const user = e.target.user.value;
+            const message = e.target.message.value;
+
+            if (user.length && message.length) {
+                socket.emit('sendMessage', { user, message });
+                renderMessage({ user, message });
+                form.reset();
+            } else {
+                M.toast({ html: 'Digite os dados', classes: 'rounded toast' });
+            }
+        });
+    </script>
+</html>
